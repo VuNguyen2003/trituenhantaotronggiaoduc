@@ -1,0 +1,1114 @@
+
+<!doctype html>
+<html lang="vi">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Làm Chủ Đồng Tiền - Board Game</title>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', cursive, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            width: 100%;
+            min-height: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .welcome-screen, .game-board, .end-screen {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            width: 100%;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            color: #ff6b6b;
+            font-size: 48px;
+            text-align: center;
+            margin: 0 0 10px 0;
+            text-shadow: 3px 3px 0 #ffd93d;
+        }
+
+        h2 {
+            color: #4ecdc4;
+            font-size: 32px;
+            text-align: center;
+            margin: 0 0 30px 0;
+        }
+
+        .character {
+            text-align: center;
+            font-size: 120px;
+            margin: 20px 0;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .instructions {
+            background: #fff9e6;
+            border: 4px solid #ffd93d;
+            border-radius: 20px;
+            padding: 25px;
+            margin: 20px 0;
+            font-size: 20px;
+            line-height: 1.8;
+            color: #333;
+        }
+
+        .instructions strong {
+            color: #ff6b6b;
+            font-size: 24px;
+        }
+
+        .instructions ul {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+
+        .instructions li {
+            margin: 10px 0;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 20px 50px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(255,107,107,0.4);
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(255,107,107,0.6);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin: 30px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            border-radius: 20px;
+            box-shadow: inset 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .board-cell {
+            aspect-ratio: 1;
+            background: white;
+            border: 4px solid #ff6b6b;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+            padding: 10px;
+        }
+
+        .board-cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .board-cell.special {
+            background: linear-gradient(135deg, #ffd93d 0%, #ffed4e 100%);
+            border-color: #ff8e53;
+        }
+
+        .board-cell.start {
+            background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+            color: white;
+            border-color: #6c5ce7;
+        }
+
+        .board-cell.finish {
+            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+            color: white;
+            border-color: #00b894;
+        }
+
+        .cell-number {
+            font-size: 18px;
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cell-icon {
+            font-size: 40px;
+            margin: 5px 0;
+        }
+
+        .player-piece {
+            position: absolute;
+            font-size: 50px;
+            z-index: 10;
+            animation: playerBounce 0.5s ease-out;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+
+        @keyframes playerBounce {
+            0% { transform: scale(0) rotate(0deg); }
+            50% { transform: scale(1.2) rotate(180deg); }
+            100% { transform: scale(1) rotate(360deg); }
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%);
+            border-radius: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .info-item {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-item span {
+            font-size: 32px;
+        }
+
+        .dice-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .dice {
+            font-size: 80px;
+            display: inline-block;
+            animation: diceSpin 0.5s ease-out;
+            margin: 20px;
+            filter: drop-shadow(0 8px 15px rgba(0,0,0,0.2));
+        }
+
+        @keyframes diceSpin {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.3); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+            padding: 20px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90%;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: modalSlide 0.5s ease-out;
+        }
+
+        @keyframes modalSlide {
+            from {
+                transform: scale(0.8) translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-title {
+            font-size: 36px;
+            color: #ff6b6b;
+            text-align: center;
+            margin: 0 0 20px 0;
+        }
+
+        .modal-question {
+            font-size: 24px;
+            color: #333;
+            margin: 20px 0;
+            line-height: 1.6;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .answer-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .answer-btn {
+            background: linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .answer-btn:hover {
+            transform: translateX(10px);
+            box-shadow: 0 8px 20px rgba(116,185,255,0.4);
+        }
+
+        .answer-btn.correct {
+            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+            animation: correctPulse 0.5s;
+        }
+
+        .answer-btn.incorrect {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            animation: shake 0.5s;
+        }
+
+        @keyframes correctPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .feedback {
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 20px;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+            border: 3px solid #00b894;
+        }
+
+        .feedback.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            border: 3px solid #ff6b6b;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #ff6b6b;
+            position: absolute;
+            animation: confettiFall 3s linear;
+        }
+
+        @keyframes confettiFall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .score-board {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            padding: 30px;
+            border-radius: 20px;
+            margin: 20px 0;
+        }
+
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: white;
+            margin: 10px 0;
+            border-radius: 15px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .final-message {
+            background: linear-gradient(135deg, #a8e6cf 0%, #dcedc1 100%);
+            padding: 30px;
+            border-radius: 20px;
+            margin: 20px 0;
+            font-size: 22px;
+            line-height: 1.8;
+            color: #333;
+            border: 4px solid #00b894;
+        }
+
+        .final-message strong {
+            color: #00b894;
+            font-size: 26px;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%);
+            margin: 10px;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 32px; }
+            h2 { font-size: 24px; }
+            .board { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+            .board-cell { font-size: 18px; }
+            .cell-icon { font-size: 28px; }
+            .instructions { font-size: 18px; }
+            .btn { font-size: 22px; padding: 15px 35px; }
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="game-container">
+   <div id="welcomeScreen" class="welcome-screen">
+    <div class="character">
+     👦👧
+    </div>
+    <h1 id="gameTitle">Làm Chủ Đồng Tiền</h1>
+    <h2 id="gameSubtitle">Tiêu Dùng Thông Minh</h2>
+    <div class="instructions"><strong>🎯 Hướng dẫn chơi:</strong>
+     <ul>
+      <li>🎲 <strong>Tung xúc xắc</strong> để di chuyển quân cờ</li>
+      <li>❓ Mỗi ô sẽ có câu hỏi về tiêu dùng thông minh</li>
+      <li>✅ <strong>Trả lời đúng:</strong> Nhận 1 đồng xu vàng 🪙</li>
+      <li>❌ <strong>Trả lời sai:</strong> Xem giải thích để học hỏi</li>
+      <li>🏆 Về đích để trở thành <strong>Cao Thủ Tiêu Dùng Thông Minh!</strong></li>
+     </ul><strong>📚 Bạn sẽ học được:</strong>
+     <ul>
+      <li>💡 Tiêu dùng thông minh là gì và lợi ích</li>
+      <li>📝 Xác định nhu cầu và lập kế hoạch chi tiêu</li>
+      <li>🔍 Tìm hiểu thông tin sản phẩm</li>
+      <li>✔️ Sử dụng sản phẩm an toàn, đúng cách</li>
+      <li>💳 Chọn phương thức thanh toán phù hợp</li>
+     </ul>
+    </div>
+    <div style="text-align: center; margin-top: 30px;"><button id="startBtn" class="btn">Bắt đầu chơi! 🚀</button>
+    </div>
+   </div>
+   <div id="gameBoard" class="game-board hidden">
+    <h1 id="gameBoardTitle">Làm Chủ Đồng Tiền</h1>
+    <div class="game-info">
+     <div class="info-item"><span>📍</span>
+      <div>
+       Vị trí: <span id="position">1</span>/20
+      </div>
+     </div>
+     <div class="info-item"><span>🪙</span>
+      <div>
+       Xu vàng: <span id="coins">0</span>
+      </div>
+     </div>
+    </div>
+    <div id="board" class="board"></div>
+    <div class="dice-container">
+     <div id="dice" class="dice">
+      🎲
+     </div><br><button id="rollBtn" class="btn">Tung xúc xắc! 🎲</button>
+    </div>
+   </div>
+   <div id="endScreen" class="end-screen hidden">
+    <div class="character">
+     🎉🏆🎊
+    </div>
+    <h1 style="color: #00b894;">Chúc mừng!</h1>
+    <h2>Bạn đã hoàn thành trò chơi!</h2>
+    <div class="score-board">
+     <h3 style="text-align: center; color: #ff6b6b; font-size: 28px;">📊 Thành tích của bạn</h3>
+     <div class="score-item"><span>🪙 Tổng xu vàng:</span> <span id="finalCoins">0</span>
+     </div>
+     <div class="score-item"><span>🎯 Đánh giá:</span> <span id="rating">Xuất sắc!</span>
+     </div>
+    </div>
+    <div class="final-message"><strong>🌟 Thông điệp quan trọng:</strong><br><br>
+      Tiêu dùng thông minh giúp bạn:<br>
+      ✅ Mua được sản phẩm chất lượng tốt<br>
+      ✅ Tiết kiệm thời gian và tiền bạc<br>
+      ✅ Bảo vệ sức khỏe và quyền lợi<br>
+      ✅ An toàn tài chính cho bản thân và gia đình<br><br><strong>Hãy áp dụng 4 nguyên tắc vàng:</strong><br>
+      1️⃣ Xác định nhu cầu và lập kế hoạch<br>
+      2️⃣ Tìm hiểu thông tin sản phẩm<br>
+      3️⃣ Sử dụng an toàn, đúng cách<br>
+      4️⃣ Chọn phương thức thanh toán phù hợp<br><br>
+      💪 Hãy chia sẻ kiến thức này với gia đình và bạn bè để cùng trở thành người tiêu dùng thông minh nhé!
+    </div>
+    <div style="text-align: center; margin-top: 30px;"><button id="playAgainBtn" class="btn">Chơi lại! 🔄</button>
+    </div>
+   </div>
+   <div id="questionModal" class="modal hidden">
+    <div class="modal-content">
+     <div class="modal-title" id="modalTitle">
+      ❓ Câu hỏi
+     </div>
+     <div class="modal-question" id="questionText"></div>
+     <div id="answerOptions" class="answer-options"></div>
+     <div id="feedback" class="feedback hidden"></div>
+     <div style="text-align: center; margin-top: 20px;"><button id="continueBtn" class="btn hidden">Tiếp tục! ➡️</button>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+        const defaultConfig = {
+            game_title: "Làm Chủ Đồng Tiền",
+            game_subtitle: "Tiêu Dùng Thông Minh",
+            start_button_text: "Bắt đầu chơi! 🚀",
+            roll_dice_text: "Tung xúc xắc! 🎲",
+            play_again_text: "Chơi lại! 🔄"
+        };
+
+        let currentPosition = 1;
+        let coins = 0;
+        let isRolling = false;
+        let currentQuestion = null;
+
+        const questions = [
+            {
+                position: 2,
+                question: "Tiêu dùng thông minh là gì?",
+                options: [
+                    "Mua nhiều đồ giảm giá",
+                    "Mua sắm có kế hoạch, tiết kiệm và phù hợp với nhu cầu",
+                    "Chỉ mua đồ đắt tiền",
+                    "Mua theo quảng cáo"
+                ],
+                correct: 1,
+                explanation: "✅ Tiêu dùng thông minh là mua sắm có kế hoạch, tiết kiệm, hiệu quả và phù hợp với đặc điểm của từng cá nhân."
+            },
+            {
+                position: 3,
+                question: "Lợi ích của tiêu dùng thông minh là gì?",
+                options: [
+                    "Chỉ giúp tiết kiệm tiền",
+                    "Giúp mua được đồ đẹp",
+                    "Giúp mua được sản phẩm chất lượng, tiết kiệm tiền bạc, bảo vệ sức khỏe",
+                    "Không có lợi ích gì"
+                ],
+                correct: 2,
+                explanation: "✅ Tiêu dùng thông minh giúp mua được sản phẩm chất lượng tốt, tiết kiệm thời gian – tiền bạc, thực hiện kế hoạch chi tiêu, và bảo vệ sức khỏe."
+            },
+            {
+                position: 5,
+                question: "Trước khi mua đồ dùng học tập, bạn nên làm gì?",
+                options: [
+                    "Mua ngay khi thấy đẹp",
+                    "Xác định nhu cầu thực sự và lập kế hoạch chi tiêu",
+                    "Hỏi bạn bè mua gì",
+                    "Chọn đồ đắt nhất"
+                ],
+                correct: 1,
+                explanation: "✅ Bước đầu tiên của tiêu dùng thông minh là xác định nhu cầu chính đáng và lập kế hoạch chi tiêu phù hợp với điều kiện bản thân."
+            },
+            {
+                position: 7,
+                question: "Khi cần mua một chiếc điện thoại mới, em nên?",
+                options: [
+                    "Mua theo trào lưu bạn bè",
+                    "Chọn mẫu đắt nhất",
+                    "Tìm hiểu thông tin về chất lượng, giá cả qua nhiều kênh",
+                    "Mua hàng giả để rẻ"
+                ],
+                correct: 2,
+                explanation: "✅ Tìm hiểu thông tin sản phẩm qua nhiều kênh, chủ động tìm hiểu chất lượng, mẫu mã, giá cả giúp chọn lọc thông tin chính xác."
+            },
+            {
+                position: 9,
+                question: "Nguồn thông tin nào KHÔNG đáng tin cậy khi tìm hiểu sản phẩm?",
+                options: [
+                    "Website chính thức của hãng",
+                    "Đánh giá từ người dùng thực tế",
+                    "Tin nhắn spam hứa giảm giá 90%",
+                    "Tư vấn từ cửa hàng uy tín"
+                ],
+                correct: 2,
+                explanation: "✅ Cần tìm hiểu thông tin từ các nguồn đáng tin cậy như website chính thức, đánh giá thực tế, tránh tin spam và quảng cáo gian lận."
+            },
+            {
+                position: 11,
+                question: "Khi sử dụng thiết bị điện, em cần chú ý điều gì?",
+                options: [
+                    "Dùng tùy ý, không cần đọc hướng dẫn",
+                    "Sử dụng đúng cách, đảm bảo an toàn theo hướng dẫn",
+                    "Cho bạn mượn không cần giám sát",
+                    "Sửa chữa tự ý khi hỏng"
+                ],
+                correct: 1,
+                explanation: "✅ Sử dụng sản phẩm an toàn, đúng cách, đảm bảo chất lượng và an toàn sức khỏe là nguyên tắc quan trọng."
+            },
+            {
+                position: 13,
+                question: "Tại sao phải kiểm tra hạn sử dụng của thực phẩm?",
+                options: [
+                    "Không cần thiết",
+                    "Chỉ để biết ngày sản xuất",
+                    "Để bảo vệ sức khỏe, tránh dùng sản phẩm hết hạn",
+                    "Để so sánh giá"
+                ],
+                correct: 2,
+                explanation: "✅ Kiểm tra hạn sử dụng giúp bảo vệ sức khỏe, đảm bảo chất lượng và an toàn khi sử dụng sản phẩm."
+            },
+            {
+                position: 15,
+                question: "Khi mua hàng online, em nên chọn phương thức thanh toán nào?",
+                options: [
+                    "Chuyển khoản trước cho người lạ",
+                    "Thanh toán khi nhận hàng (COD) hoặc qua cổng thanh toán uy tín",
+                    "Gửi tiền mặt qua bưu điện",
+                    "Cho mượn thẻ ngân hàng của bố mẹ"
+                ],
+                correct: 1,
+                explanation: "✅ Lựa chọn phương thức thanh toán phù hợp và an toàn như COD hoặc cổng thanh toán uy tín, không chia sẻ thông tin thẻ cho người khác."
+            },
+            {
+                position: 17,
+                question: "Sau khi mua hàng, tại sao phải giữ hóa đơn?",
+                options: [
+                    "Không cần giữ",
+                    "Chỉ để làm kỷ niệm",
+                    "Để bảo hành, đổi trả và chứng minh giao dịch",
+                    "Để khoe với bạn bè"
+                ],
+                correct: 2,
+                explanation: "✅ Giữ hóa đơn và chứng từ giao dịch giúp bảo vệ quyền lợi người tiêu dùng, hỗ trợ bảo hành và đổi trả khi cần."
+            },
+            {
+                position: 19,
+                question: "Điều nào thể hiện bạn là người tiêu dùng thông minh?",
+                options: [
+                    "Mua nhiều đồ không cần thiết",
+                    "So sánh giá, chọn sản phẩm phù hợp, sử dụng đúng cách",
+                    "Luôn mua đồ đắt nhất",
+                    "Không quan tâm đến chất lượng"
+                ],
+                correct: 1,
+                explanation: "✅ Người tiêu dùng thông minh là người so sánh, lựa chọn sản phẩm phù hợp với nhu cầu và khả năng, sử dụng đúng cách và tiết kiệm."
+            },
+            {
+                position: 4,
+                question: "Bạn muốn mua giày thể thao mới. Cách nào là tiêu dùng thông minh?",
+                options: [
+                    "Mua đôi bạn thân đang dùng",
+                    "Chọn đôi đắt nhất trong cửa hàng",
+                    "Xác định mục đích sử dụng, ngân sách, rồi so sánh nhiều mẫu",
+                    "Mua giày giảm giá dù không vừa size"
+                ],
+                correct: 2,
+                explanation: "✅ Xác định nhu cầu chính đáng (mục đích dùng, size phù hợp), lập kế hoạch chi tiêu trong khả năng, rồi so sánh để chọn sản phẩm tốt nhất."
+            },
+            {
+                position: 6,
+                question: "Khi thấy quảng cáo 'Giảm 70% - Chỉ hôm nay!', bạn nên?",
+                options: [
+                    "Mua ngay không suy nghĩ",
+                    "Kiểm tra giá gốc, đánh giá sản phẩm, xem có thực sự cần không",
+                    "Rủ bạn bè mua chung",
+                    "Bỏ qua vì chắc chắn là lừa đảo"
+                ],
+                correct: 1,
+                explanation: "✅ Không mua hàng vội vã vì quảng cáo. Hãy tìm hiểu kỹ thông tin, kiểm tra giá thực, và xác định xem có thực sự cần thiết không."
+            },
+            {
+                position: 8,
+                question: "Trang web bán hàng uy tín thường có đặc điểm gì?",
+                options: [
+                    "Giá rẻ hơn mọi nơi, không có thông tin liên hệ",
+                    "Có địa chỉ rõ ràng, chính sách đổi trả, nhiều đánh giá thực",
+                    "Yêu cầu chuyển khoản trước 100%",
+                    "Chỉ bán qua tin nhắn riêng"
+                ],
+                correct: 1,
+                explanation: "✅ Trang web uy tín có thông tin liên hệ rõ ràng, chính sách bảo hành/đổi trả minh bạch, và nhiều đánh giá từ người dùng thực tế."
+            },
+            {
+                position: 10,
+                question: "Khi mua đồ ăn đóng gói, em cần kiểm tra những gì?",
+                options: [
+                    "Chỉ cần nhìn bao bì đẹp",
+                    "Hạn sử dụng, thành phần, nguồn gốc xuất xứ",
+                    "Giá rẻ là được",
+                    "Mua theo lời bạn bè giới thiệu"
+                ],
+                correct: 1,
+                explanation: "✅ Luôn kiểm tra hạn sử dụng, thành phần, nguồn gốc xuất xứ để đảm bảo an toàn thực phẩm và sức khỏe."
+            },
+            {
+                position: 12,
+                question: "Sau khi mua máy tính mới, điều đầu tiên nên làm là?",
+                options: [
+                    "Chơi game ngay",
+                    "Đọc hướng dẫn sử dụng và bảo hành",
+                    "Cho bạn mượn thử",
+                    "Vứt hộp và giấy tờ đi"
+                ],
+                correct: 1,
+                explanation: "✅ Đọc kỹ hướng dẫn sử dụng, lưu giữ hóa đơn và giấy bảo hành để sử dụng đúng cách và bảo vệ quyền lợi."
+            },
+            {
+                position: 14,
+                question: "Khi thanh toán bằng tiền mặt, em nên làm gì?",
+                options: [
+                    "Đưa tiền và đi ngay",
+                    "Kiểm tra số tiền thối lại và lấy hóa đơn",
+                    "Không cần hóa đơn",
+                    "Để tiền thối trong cửa hàng"
+                ],
+                correct: 1,
+                explanation: "✅ Luôn kiểm tra kỹ số tiền thối lại, lấy và lưu giữ hóa đơn để có bằng chứng giao dịch khi cần thiết."
+            },
+            {
+                position: 16,
+                question: "Bạn nên chia sẻ thông tin thẻ ngân hàng trong trường hợp nào?",
+                options: [
+                    "Khi bạn thân yêu cầu",
+                    "Khi có email yêu cầu xác nhận",
+                    "KHÔNG BAO GIỜ chia sẻ với bất kỳ ai",
+                    "Khi trang web hứa giảm giá"
+                ],
+                correct: 2,
+                explanation: "✅ KHÔNG BAO GIỜ chia sẻ thông tin thẻ, mật khẩu ngân hàng với bất kỳ ai, kể cả bạn bè, để bảo vệ tài sản."
+            },
+            {
+                position: 18,
+                question: "Tại sao nên mua sắm cùng bố mẹ khi còn nhỏ?",
+                options: [
+                    "Để xin tiền mua đồ",
+                    "Để học cách chọn lựa, so sánh và quản lý tiền",
+                    "Để được mua nhiều hơn",
+                    "Không cần thiết"
+                ],
+                correct: 1,
+                explanation: "✅ Mua sắm cùng người lớn giúp học cách so sánh, lựa chọn thông minh và rèn kỹ năng quản lý tài chính từ nhỏ."
+            }
+        ];
+
+        const boardCells = [
+            { number: 1, icon: "🚀", label: "Start", type: "start" },
+            { number: 2, icon: "📚", label: "Q1", type: "question" },
+            { number: 3, icon: "💡", label: "Q2", type: "question" },
+            { number: 4, icon: "👟", label: "Q3", type: "question" },
+            { number: 5, icon: "📝", label: "Q4", type: "special" },
+            { number: 6, icon: "🛍️", label: "Q5", type: "question" },
+            { number: 7, icon: "📱", label: "Q6", type: "question" },
+            { number: 8, icon: "🔍", label: "Q7", type: "question" },
+            { number: 9, icon: "⚠️", label: "Q8", type: "question" },
+            { number: 10, icon: "🍎", label: "Q9", type: "special" },
+            { number: 11, icon: "⚡", label: "Q10", type: "question" },
+            { number: 12, icon: "💻", label: "Q11", type: "question" },
+            { number: 13, icon: "✅", label: "Q12", type: "question" },
+            { number: 14, icon: "💰", label: "Q13", type: "question" },
+            { number: 15, icon: "💳", label: "Q14", type: "special" },
+            { number: 16, icon: "🔒", label: "Q15", type: "question" },
+            { number: 17, icon: "🧾", label: "Q16", type: "question" },
+            { number: 18, icon: "👨‍👩‍👧", label: "Q17", type: "question" },
+            { number: 19, icon: "🌟", label: "Q18", type: "question" },
+            { number: 20, icon: "🏆", label: "Finish", type: "finish" }
+        ];
+
+        function renderBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            
+            boardCells.forEach(cell => {
+                const cellDiv = document.createElement('div');
+                cellDiv.className = `board-cell ${cell.type}`;
+                cellDiv.dataset.position = cell.number;
+                
+                const numberSpan = document.createElement('div');
+                numberSpan.className = 'cell-number';
+                numberSpan.textContent = cell.number;
+                
+                const iconSpan = document.createElement('div');
+                iconSpan.className = 'cell-icon';
+                iconSpan.textContent = cell.icon;
+                
+                cellDiv.appendChild(numberSpan);
+                cellDiv.appendChild(iconSpan);
+                
+                if (cell.number === currentPosition) {
+                    const playerPiece = document.createElement('div');
+                    playerPiece.className = 'player-piece';
+                    playerPiece.textContent = '🎯';
+                    playerPiece.id = 'playerPiece';
+                    cellDiv.appendChild(playerPiece);
+                }
+                
+                board.appendChild(cellDiv);
+            });
+        }
+
+        function updateGameInfo() {
+            document.getElementById('position').textContent = currentPosition;
+            document.getElementById('coins').textContent = coins;
+        }
+
+        function rollDice() {
+            if (isRolling) return;
+            isRolling = true;
+            
+            const rollBtn = document.getElementById('rollBtn');
+            rollBtn.disabled = true;
+            
+            const diceElement = document.getElementById('dice');
+            const diceValues = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+            
+            let rollCount = 0;
+            const rollInterval = setInterval(() => {
+                diceElement.textContent = diceValues[Math.floor(Math.random() * 6)];
+                rollCount++;
+                
+                if (rollCount > 10) {
+                    clearInterval(rollInterval);
+                    const finalRoll = Math.floor(Math.random() * 6) + 1;
+                    diceElement.textContent = diceValues[finalRoll - 1];
+                    
+                    setTimeout(() => {
+                        movePlayer(finalRoll);
+                    }, 500);
+                }
+            }, 100);
+        }
+
+        function movePlayer(steps) {
+            const newPosition = Math.min(currentPosition + steps, 20);
+            
+            let step = 0;
+            const moveInterval = setInterval(() => {
+                if (currentPosition < newPosition) {
+                    currentPosition++;
+                    renderBoard();
+                    updateGameInfo();
+                    step++;
+                }
+                
+                if (step >= steps || currentPosition >= 20) {
+                    clearInterval(moveInterval);
+                    
+                    setTimeout(() => {
+                        if (currentPosition === 20) {
+                            endGame();
+                        } else {
+                            const question = questions.find(q => q.position === currentPosition);
+                            if (question) {
+                                showQuestion(question);
+                            } else {
+                                isRolling = false;
+                                document.getElementById('rollBtn').disabled = false;
+                            }
+                        }
+                    }, 500);
+                }
+            }, 300);
+        }
+
+        function showQuestion(question) {
+            currentQuestion = question;
+            const modal = document.getElementById('questionModal');
+            const questionText = document.getElementById('questionText');
+            const answerOptions = document.getElementById('answerOptions');
+            const feedback = document.getElementById('feedback');
+            const continueBtn = document.getElementById('continueBtn');
+            
+            questionText.textContent = question.question;
+            answerOptions.innerHTML = '';
+            feedback.classList.add('hidden');
+            continueBtn.classList.add('hidden');
+            
+            question.options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                btn.textContent = option;
+                btn.onclick = () => checkAnswer(index);
+                answerOptions.appendChild(btn);
+            });
+            
+            modal.classList.remove('hidden');
+        }
+
+        function checkAnswer(selectedIndex) {
+            const answerBtns = document.querySelectorAll('.answer-btn');
+            const feedback = document.getElementById('feedback');
+            const continueBtn = document.getElementById('continueBtn');
+            
+            answerBtns.forEach(btn => btn.disabled = true);
+            
+            const isCorrect = selectedIndex === currentQuestion.correct;
+            
+            answerBtns[selectedIndex].classList.add(isCorrect ? 'correct' : 'incorrect');
+            
+            if (isCorrect) {
+                coins++;
+                createConfetti();
+                feedback.className = 'feedback correct';
+                feedback.innerHTML = `<div style="font-size: 60px; margin: 10px 0;">🎉</div>${currentQuestion.explanation}<br><br><strong>+1 Xu vàng! 🪙</strong>`;
+            } else {
+                feedback.className = 'feedback incorrect';
+                feedback.innerHTML = `<div style="font-size: 60px; margin: 10px 0;">😅</div>${currentQuestion.explanation}<br><br><strong>Cố gắng lần sau nhé!</strong>`;
+                answerBtns[currentQuestion.correct].classList.add('correct');
+            }
+            
+            feedback.classList.remove('hidden');
+            continueBtn.classList.remove('hidden');
+            updateGameInfo();
+        }
+
+        function createConfetti() {
+            const colors = ['#ff6b6b', '#ffd93d', '#6bcf7f', '#4ecdc4', '#a29bfe'];
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 30);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('questionModal').classList.add('hidden');
+            isRolling = false;
+            document.getElementById('rollBtn').disabled = false;
+            currentQuestion = null;
+        }
+
+        async function endGame() {
+            try {
+                const result = await window.dataSdk.create({
+                    player_name: "Người chơi",
+                    current_position: currentPosition,
+                    coins: coins,
+                    completed_at: new Date().toISOString()
+                });
+                
+                if (!result.isOk) {
+                    console.error("Không thể lưu kết quả");
+                }
+            } catch (error) {
+                console.error("Lỗi khi lưu dữ liệu:", error);
+            }
+            
+            document.getElementById('gameBoard').classList.add('hidden');
+            const endScreen = document.getElementById('endScreen');
+            endScreen.classList.remove('hidden');
+            
+            document.getElementById('finalCoins').textContent = coins;
+            
+            let rating = "Tốt!";
+            if (coins >= 15) rating = "Xuất sắc! 🌟";
+            else if (coins >= 10) rating = "Rất tốt! ⭐";
+            else if (coins >= 5) rating = "Khá! 👍";
+            
+            document.getElementById('rating').textContent = rating;
+            
+            createConfetti();
+        }
+
+        function resetGame() {
+            currentPosition = 1;
+            coins = 0;
+            isRolling = false;
+            currentQuestion = null;
+            
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('endScreen').classList.add('hidden');
+            document.getElementById('gameBoard').classList.remove('hidden');
+            
+            renderBoard();
+            updateGameInfo();
+            document.getElementById('rollBtn').disabled = false;
+        }
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('gameBoard').classList.remove('hidden');
+            renderBoard();
+            updateGameInfo();
+        });
+
+        document.getElementById('rollBtn').addEventListener('click', rollDice);
+
+        document.getElementById('continueBtn').addEventListener('click', closeModal);
+
+        document.getElementById('playAgainBtn').addEventListener('click', resetGame);
+
+        const dataHandler = {
+            onDataChanged(data) {
+                console.log("Dữ liệu đã thay đổi:", data.length, "bản ghi");
+            }
+        };
+
+        (async function() {
+            if (window.dataSdk) {
+                const initResult = await window.dataSdk.init(dataHandler);
+                if (!initResult.isOk) {
+                    console.error("Không thể khởi tạo Data SDK");
+                }
+            }
+
+            if (window.elementSdk) {
+                await window.elementSdk.init({
+                    defaultConfig,
+                    onConfigChange: async (config) => {
+                        const gameTitle = config.game_title || defaultConfig.game_title;
+                        const gameSubtitle = config.game_subtitle || defaultConfig.game_subtitle;
+                        const startButtonText = config.start_button_text || defaultConfig.start_button_text;
+                        const rollDiceText = config.roll_dice_text || defaultConfig.roll_dice_text;
+                        const playAgainText = config.play_again_text || defaultConfig.play_again_text;
+
+                        document.getElementById('gameTitle').textContent = gameTitle;
+                        document.getElementById('gameSubtitle').textContent = gameSubtitle;
+                        document.getElementById('gameBoardTitle').textContent = gameTitle;
+                        document.getElementById('startBtn').textContent = startButtonText;
+                        document.getElementById('rollBtn').textContent = rollDiceText;
+                        document.getElementById('playAgainBtn').textContent = playAgainText;
+                    },
+                    mapToCapabilities: (config) => ({
+                        recolorables: [
+                            {
+                                get: () => config.primary_color || "#ff6b6b",
+                                set: (value) => {
+                                    config.primary_color = value;
+                                    window.elementSdk.setConfig({ primary_color: value });
+                                }
+                            },
+                            {
+                                get: () => config.secondary_color || "#ffd93d",
+                                set: (value) => {
+                                    config.secondary_color = value;
+                                    window.elementSdk.setConfig({ secondary_color: value });
+                                }
+                            },
+                            {
+                                get: () => config.accent_color || "#4ecdc4",
+                                set: (value) => {
+                                    config.accent_color = value;
+                                    window.elementSdk.setConfig({ accent_color: value });
+                                }
+                            }
+                        ],
+                        borderables: [],
+                        fontEditable: undefined,
+                        fontSizeable: undefined
+                    }),
+                    mapToEditPanelValues: (config) => new Map([
+                        ["game_title", config.game_title || defaultConfig.game_title],
+                        ["game_subtitle", config.game_subtitle || defaultConfig.game_subtitle],
+                        ["start_button_text", config.start_button_text || defaultConfig.start_button_text],
+                        ["roll_dice_text", config.roll_dice_text || defaultConfig.roll_dice_text],
+                        ["play_again_text", config.play_again_text || defaultConfig.play_again_text]
+                    ])
+                });
+            }
+        })();
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9aba7ed85550e2e7',t:'MTc2NTM0NjE0OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
